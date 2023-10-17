@@ -102,7 +102,7 @@ function makeCalendar(dateStart, dateLength) {
 	// Split date to ensure expected formatting (dd/mm/yyyy)
 	var params = dateStart.split('/'),
 		startDay = parseInt(params[1]),
-		startMonth = parseInt(params[0] - 2),
+		startMonth = parseInt(params[0] - 1),
 		startYear = parseInt(params[2]),
 		formatted = startYear + '/' + startMonth + '/' + startDay;
 
@@ -227,7 +227,7 @@ function createNewMonth(curMonth, curYear) {
 	$month_wrapper.appendChild($days);
 
 	// Iterate on days of week
-	for (var i = 0; j < dayName.length; i++) {
+	for (var i = 0; i < dayName.length; i++) {
 		let $day_cell = document.createElement('li');
 		let $day_name = document.createElement('span');
 
