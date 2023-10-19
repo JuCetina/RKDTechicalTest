@@ -14,16 +14,16 @@ var useMonthShort = false,
 
 // Validation rules
 const validations = {
-	required: function(value) {
+	required: function (value) {
 		return value !== '';
 	},
-	dateFormat: function(value) {
+	dateFormat: function (value) {
 		return value.match(/^((0[13578]|1[02])[\/|\-](0[1-9]|[12][0-9]|3[01])[\/|\-](18|19|20)[0-9]{2})|((0[469]|11)[\/|\-](0[1-9]|[12][0-9]|30)[\/|\-](18|19|20)[0-9]{2})|((02)[\/|\-](0[1-9]|1[0-9]|2[0-8])[\/|\-](18|19|20)[0-9]{2})|((02)[\/|\-]29[\/|\-](((18|19|20)(04|08|[2468][048]|[13579][26]))|2000))$/);
 	},
-	daysLength: function(value) {
+	daysLength: function (value) {
 		return value.match(/^([1-9][0-9]{0,2})$/);
 	},
-	countryCode: function(value){
+	countryCode: function (value) {
 		return value.match(/^[a-zA-Z]{2,2}$/);
 	}
 };
@@ -80,7 +80,7 @@ function formatNames(type, useShort) {
 		arrayFinal;
 
 	// If using short version of names
-	if ( useShort ) {
+	if (useShort) {
 		// Create a new empty array
 		arrayFinal = [];
 
@@ -88,7 +88,7 @@ function formatNames(type, useShort) {
 		for (var i = 0; i < arrayFull.length; i++) {
 			arrayFinal.push(arrayFull[i].substr(0, 3));
 		}
-	// If using full version of names
+		// If using full version of names
 	} else {
 		// Create a shallow copy of original
 		arrayFinal = arrayFull.slice();
@@ -98,8 +98,26 @@ function formatNames(type, useShort) {
 	return arrayFinal;
 }
 
+const getHolidays = async (country) => {
+	const url = `holidays/${country}.json`;
+
+	try {
+		const response = await fetch(url);
+		if (response.ok) {
+			const json = await response.json();
+			return json;
+		}
+	}
+	catch (error) {
+		console.log(error);
+	}
+}
+
 // Make calendar
-function makeCalendar(dateStart, dateLength) {
+async function makeCalendar(dateStart, dateLength, codeCountry) {
+
+	codeCountry = codeCountry.toLowerCase();
+
 	// Parse dateLength value just to make sure we work with an integer
 	dateLength = parseInt(dateLength);
 
@@ -121,44 +139,44 @@ function makeCalendar(dateStart, dateLength) {
 		var isLast = (j === dateLength);
 
 		// First iteration (staring day)
-		if ( j === 0 ) {
-			tempDay		= startDay;
-			tempMonth	= startMonth;
-			tempYear	= startYear;
-			monthLimit	= totalDaysInMonth(tempYear, tempMonth);
-			firstDay	= firstDayOfMonth(tempYear, tempMonth);
+		if (j === 0) {
+			tempDay = startDay;
+			tempMonth = startMonth;
+			tempYear = startYear;
+			monthLimit = totalDaysInMonth(tempYear, tempMonth);
+			firstDay = firstDayOfMonth(tempYear, tempMonth);
 
 			// Fix empty spaces array iteration length if week starts on monday
 			var loopLen = tempDay - 1;
 
 			// Add all invalid day spaces before start date
 			addEmptyDaySpaces(tempYear, tempMonth, loopLen);
-		// Current day number exceeds month total days
-		} else if ( tempDay + tempCount > monthLimit && !isLast ) {
+			// Current day number exceeds month total days
+		} else if (tempDay + tempCount > monthLimit && !isLast) {
 			// Reset temporal day counts
-			tempCount	= 0;
-			tempDay		= 1;
+			tempCount = 0;
+			tempDay = 1;
 
 			// Reset temporal month and increment by one temporal year variable
 			// if current month exceeds maximum amount of months in a year (11 > December)
-			if ( tempMonth === 11 ) {
+			if (tempMonth === 11) {
 				tempYear = tempYear + 1;
 				tempMonth = 0;
-			// else, increment temporal month variable by one
+				// else, increment temporal month variable by one
 			} else {
 				tempMonth = tempMonth + 1;
 			}
 
 			// Reset month limits and get new month's first day
-			monthLimit	= totalDaysInMonth(tempYear, tempMonth);
-			firstDay	= firstDayOfMonth(tempYear, tempMonth);
+			monthLimit = totalDaysInMonth(tempYear, tempMonth);
+			firstDay = firstDayOfMonth(tempYear, tempMonth);
 
 			// Create new month structure
 			createNewMonth(tempMonth, tempYear);
 		}
 
-		if ( !isLast ) {
-			var $month = document.getElementById(monthName[tempMonth] +  '_' + tempYear);
+		if (!isLast) {
+			var $month = document.getElementById(monthName[tempMonth] + '_' + tempYear);
 			let $day_cell = document.createElement('li');
 			let $day_name = document.createElement('span');
 
@@ -169,13 +187,52 @@ function makeCalendar(dateStart, dateLength) {
 				dateString = (tempDay + tempCount) + '/' + tempMonth;
 
 			// Check if day is weekend and add class name for styling purposes
-			if ( weekend % 7 === 0 || (weekend + 1) % 7 === 0) {
+			if (weekend % 7 === 0 || (weekend + 1) % 7 === 0) {
 				$day_cell.classList.add('weekend');
 			}
 
 			// Check if day is today and add class name for styling purposes
-			if ( dateString + '/' + tempYear === today ) {
+			if (dateString + '/' + tempYear === today) {
 				$day_cell.classList.add('today');
+			}
+
+			if (codeCountry === 'us') {
+				let usHolidays = await getHolidays('us');
+				for (let i in usHolidays) {
+					if (i === dateString) {
+						$day_cell.classList.add('holiday');
+						let holidayName = usHolidays[i][0].name;
+						$day_cell.addEventListener('click', () => {
+							alert(holidayName);
+						});
+						break;
+					}
+				}
+			} else if (codeCountry === 'cr') {
+				let crHolidays = await getHolidays('cr');
+				for (let i in crHolidays) {
+					if (i === dateString) {
+						$day_cell.classList.add('holiday');
+						let holidayName = crHolidays[i][0].name;
+						$day_cell.addEventListener('click', () => {
+							alert(holidayName);
+						});
+						break;
+					}
+				}
+			}
+			else {
+				let holidays = await getHolidays('int');
+				for (let i in holidays) {
+					if (i === dateString) {
+						$day_cell.classList.add('holiday');
+						let holidayName = holidays[i][0].name;
+						$day_cell.addEventListener('click', () => {
+							alert(holidayName);
+						});
+						break;
+					}
+				}
 			}
 
 			// Append day name to month table container
@@ -191,7 +248,7 @@ function makeCalendar(dateStart, dateLength) {
 	}
 
 	// Remove loading class after all days/months are rendered
-	window.setTimeout(function() {
+	window.setTimeout(function () {
 		cal.parentNode.classList.remove('loading');
 	}, 1500);
 }
@@ -202,7 +259,7 @@ function createNewMonth(curMonth, curYear) {
 	let $month_wrapper = document.createElement('div');
 
 	// Add month wrapper class based on version of week day names (full || short)
-	$month_wrapper.className = ( !useDayShort ) ? 'month big' : 'month';
+	$month_wrapper.className = (!useDayShort) ? 'month big' : 'month';
 
 	// Append month wrapper to calendar
 	cal.appendChild($month_wrapper);
@@ -221,7 +278,7 @@ function createNewMonth(curMonth, curYear) {
 
 	// Create day numbers container
 	let $days = document.createElement('ol');
-	var monthId =  monthName[curMonth] + '_' + curYear;
+	var monthId = monthName[curMonth] + '_' + curYear;
 	$days.id = monthId;
 	$days.className = 'week_days';
 
@@ -253,7 +310,7 @@ function createNewMonth(curMonth, curYear) {
 // Fill days on calendar before user selected date
 function addEmptyDaySpaces(year, month, length) {
 	var firstDay = firstDayOfMonth(year, month);
-	var monthId =  monthName[month] + '_' + year;
+	var monthId = monthName[month] + '_' + year;
 	var $month = document.getElementById(monthId);
 	var loopLen = length;
 
@@ -274,7 +331,7 @@ function addEmptyDaySpaces(year, month, length) {
 // Fill days on calendar after user input length
 function fillEmptyMonth(year, month, start, length) {
 	var firstDay = firstDayOfMonth(year, month);
-	var monthId =  monthName[month] + '_' + year;
+	var monthId = monthName[month] + '_' + year;
 	var $month = document.getElementById(monthId);
 	var loopLen = length;
 
@@ -299,16 +356,16 @@ function validateForm() {
 
 	// Add classname 'used' if input has a value
 	for (var k = 0; k < inputArray.length; k++) {
-		inputArray[k].addEventListener('blur', function(e) {
-			if ( !this.value ) {
+		inputArray[k].addEventListener('blur', function (e) {
+			if (!this.value) {
 				this.classList.remove('used');
 			} else {
 				this.classList.add('used');
 			}
 		});
 	}
-  
-	formElem.addEventListener('submit', function(e) {
+
+	formElem.addEventListener('submit', function (e) {
 		e.preventDefault();
 
 		var errorsLen = 0, i = 0;
@@ -323,10 +380,10 @@ function validateForm() {
 				var inputName = inputArray[i].getAttribute('name'),
 					elError = document.getElementById(inputName + '-error');
 
-				if ( !validations[rules[j]](inputArray[i].value) ) {
+				if (!validations[rules[j]](inputArray[i].value)) {
 					e.preventDefault();
 
-					if ( !elError ) {
+					if (!elError) {
 						elError = document.createElement('span');
 						elError.id = inputName + '-error';
 						elError.classList.add('error');
@@ -340,7 +397,7 @@ function validateForm() {
 
 					break;
 				} else {
-					if ( elError ) {
+					if (elError) {
 						elError.parentNode.removeChild(elError);
 					}
 
@@ -353,16 +410,16 @@ function validateForm() {
 			i++;
 		}
 
-		if ( !errorsLen ) {
+		if (!errorsLen) {
 			main.classList.add('with-data');
 			cal.parentNode.classList.add('loading');
 
-			while ( cal.hasChildNodes() ) {
+			while (cal.hasChildNodes()) {
 				cal.removeChild(cal.lastChild);
 			}
 
 			cal.scrollTop = 0;
-			makeCalendar(inputArray[0].value, inputArray[1].value);
+			makeCalendar(inputArray[0].value, inputArray[1].value, inputArray[2].value);
 		}
 
 	}, false);

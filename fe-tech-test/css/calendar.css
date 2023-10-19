@@ -125,3 +125,9 @@
 	background-color: #444444;
 	color: #ebedef;
 }
+
+.month ul > li.holiday,
+.month ol > li.holiday {
+	background-color: #3d9438;
+	color: #ebedef;
+}
