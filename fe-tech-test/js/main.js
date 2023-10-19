@@ -48,8 +48,6 @@ var monthName = formatNames('month', useMonthShort);
 var dayName;
 
 
-
-
 /*
  *  Helpers
  */
